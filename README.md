@@ -2,7 +2,7 @@
 
 The handshake test connects to your agent the way the Showcase orchestrator will, over Streamable HTTP. It then runs the six checks from the Agent Interface Specification v1.0 (section 9). You need to pass all six to take part in the Week 12 Interoperability Showcase.
 
-**Deadline: pass by the end of Week 10 (Friday 9 October).** You can run the test as many times as you like before then.
+**Deadline: pass by the end of Week 10 (Friday 9 October)** and submit your report as described below. You can run the test as many times as you like before then.
 
 ## Set up (once)
 
@@ -37,6 +37,18 @@ Useful options:
 | `-v` | Shows every call as it happens. Useful if the test seems stuck. |
 | `--examples examples.json` | Gives one valid set of arguments per tool (see below). |
 | `--json report.json` | Saves the full report. Attach it if you post about a failure on Ed. |
+
+## Submitting your result
+
+You don't need anyone to sign you off. Your report is your proof:
+
+```bash
+python handshake.py http://localhost:8000/mcp --json handshake_report.json
+```
+
+Copy `handshake_report.json` into the **root of your own agent repo**, commit it and push it by Friday 9 October. You can re-run the test and push a newer report as often as you like. We read the latest report from every repo after the deadline.
+
+The Showcase runs the same checks live against your agent, so the report only counts if your agent actually behaves that way on the day.
 
 ## The six checks
 
