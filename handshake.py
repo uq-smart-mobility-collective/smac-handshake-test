@@ -49,8 +49,8 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 try:
     from mcp import ClientSession
-    from mcp.client.streamable_http import streamablehttp_client
-    from mcp.shared.exceptions import McpError
+    from mcp.client.streamable_http import streamable_http_client
+    from mcp.shared.exceptions import MCPError
 except ImportError:  # pragma: no cover
     sys.exit("The MCP Python SDK is missing. Run:  pip install -r requirements.txt")
 
