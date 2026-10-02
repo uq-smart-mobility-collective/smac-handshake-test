@@ -14,6 +14,10 @@ python -m venv .venv-handshake
 pip install -r requirements.txt
 ```
 
+Already cloned it? Run `git pull` and then `pip install -r requirements.txt` again to pick up fixes.
+
+**Stay on the 1.x MCP SDK.** `requirements.txt` pins `mcp>=1.27,<2`. The 2.x SDK renamed the client API and FastMCP, and it defaults to a newer protocol than the 2025-11-25 revision the spec pins. The same applies to your agent: if it fails with `No module named 'mcp.server.fastmcp'`, you have mcp 2.x, and `pip install "mcp>=1.27,<2"` in your agent's environment fixes it.
+
 ## Run it
 
 1. Start your agent with the Streamable HTTP transport, not stdio. With the Python SDK:
@@ -79,6 +83,7 @@ Check 4 needs one real answer from each of your tools. The test builds arguments
 ## Common fixes
 
 - **"Could not connect"**: your agent isn't running, or it's still on stdio. Check the port.
+- **"needs the 1.x MCP Python SDK"**: you're running the test in an environment with mcp 2.x. Use the setup steps above.
 - **"404 Not Found"**: the path is wrong. The Python SDK uses `/mcp`.
 - **Version is not semantic**: FastMCP has no version argument. Set it after creating the server:
   `mcp._mcp_server.version = "1.0.0"`

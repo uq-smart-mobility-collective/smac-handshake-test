@@ -47,14 +47,27 @@ from typing import Any
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+# The spec pins MCP protocol 2025-11-25, which is the 1.x Python SDK. mcp 2.x
+# renamed the client API (and FastMCP) and defaults to a newer protocol, so
+# stop early with a clear message rather than a confusing import error.
+try:
+    from importlib.metadata import PackageNotFoundError, version as _pkg_version
+    _mcp_version = _pkg_version("mcp")
+except PackageNotFoundError:  # pragma: no cover
+    sys.exit("The MCP Python SDK is missing. Run:  pip install -r requirements.txt")
+if int(_mcp_version.split(".")[0]) >= 2:
+    sys.exit(f"This handshake test needs the 1.x MCP Python SDK, but mcp {_mcp_version} is installed.\n"
+             "Run it in its own virtual environment and install the pinned version:\n"
+             '    pip install -r requirements.txt      (or: pip install "mcp>=1.27,<2" httpx)')
+
 try:
     from mcp import ClientSession
-    from mcp.client.streamable_http import streamable_http_client
-    from mcp.shared.exceptions import MCPError
+    from mcp.client.streamable_http import streamablehttp_client
+    from mcp.shared.exceptions import McpError
 except ImportError:  # pragma: no cover
     sys.exit("The MCP Python SDK is missing. Run:  pip install -r requirements.txt")
 
-HARNESS_VERSION = "1.0.0"
+HARNESS_VERSION = "1.0.1"
 
 try:
     BaseExceptionGroup
