@@ -22,6 +22,7 @@ Usage
   python handshake.py http://localhost:8000/mcp
   python handshake.py http://localhost:8000/mcp --examples examples.json
   python handshake.py http://localhost:8000/mcp --json report.json
+  MCP_TOKEN=... python handshake.py https://<zone>.uqcloud.net/mcp   (or --token)
 
 `--examples` is optional: a JSON file mapping each of your tool names to one
 valid set of arguments. Without it, the test generates arguments from your
@@ -37,6 +38,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import os
 import re
 import sys
 import time
@@ -337,8 +339,9 @@ def find_sources(payload: Any) -> Any:
 # The test
 # ----------------------------------------------------------------------------
 class Handshake:
-    def __init__(self, url: str, examples: dict | None, verbose: bool):
+    def __init__(self, url: str, examples: dict | None, verbose: bool, headers: dict[str, str] | None = None):
         self.url = url
+        self.headers = headers or {}
         self.examples = examples or {}
         self.verbose = verbose
         self.r = Report(url)
@@ -559,7 +562,7 @@ class Handshake:
     # -- run ----------------------------------------------------------------
     async def run(self) -> Report:
         try:
-            async with streamablehttp_client(self.url, timeout=TIMEOUT_S, sse_read_timeout=TIMEOUT_S * 2) as (rd, wr, _):
+            async with streamablehttp_client(self.url, headers=self.headers, timeout=TIMEOUT_S, sse_read_timeout=TIMEOUT_S * 2) as (rd, wr, _):
                 async with ClientSession(rd, wr, read_timeout_seconds=timedelta(seconds=TIMEOUT_S + 2)) as session:
                     self.session = session
                     t0 = time.perf_counter()
@@ -586,7 +589,7 @@ class Handshake:
             if self.stage == 1:
                 c = self.r[1]
                 if not any(l == FAIL for l, _ in c.findings):
-                    c.fail(explain_connect_error(e, self.url))
+                    c.fail(explain_connect_error(e, self.url, self.headers))
                 reason = "Not run: could not complete the connection"
             else:
                 self.r[self.stage].fail(
@@ -609,18 +612,22 @@ def unwrap(e: BaseException) -> BaseException:
     return e
 
 
-def probe_status(url: str) -> int | None:
+def probe_status(url: str, headers: dict[str, str] | None = None) -> int | None:
     try:
         import httpx
-        return httpx.post(url, json={}, headers={"Accept": "application/json, text/event-stream"}, timeout=5).status_code
+        return httpx.post(url, json={}, headers={"Accept": "application/json, text/event-stream", **(headers or {})},
+                          timeout=5).status_code
     except Exception:
         return None
 
 
-def explain_connect_error(e: BaseException, url: str) -> str:
+def explain_connect_error(e: BaseException, url: str, headers: dict[str, str] | None = None) -> str:
     e = unwrap(e)
     s = f"{type(e).__name__}: {e}"
-    status = probe_status(url)
+    status = probe_status(url, headers)
+    if status == 401:
+        return (f"Got 401 Unauthorized from {url}. The agent needs a bearer token: pass --token "
+                "or set MCP_TOKEN (on a course zone it is in /opt/mcp-agent/TOKEN.txt).")
     if status == 404:
         return (f"Got 404 Not Found from {url}. Something is listening, but not at that path. "
                 "The Python SDK serves Streamable HTTP at /mcp by default.")
@@ -674,14 +681,18 @@ def main() -> int:
     ap.add_argument("--json", dest="json_out", help="Also write the full report as JSON to this file")
     ap.add_argument("-v", "--verbose", action="store_true", help="Print every call as it happens")
     ap.add_argument("--no-colour", action="store_true", help="Plain output")
+    ap.add_argument("--token", default=os.environ.get("MCP_TOKEN"),
+                    help="Bearer token sent as 'Authorization: Bearer <token>' on every request "
+                         "(default: $MCP_TOKEN). Prefer the env var: command-line args are visible to other users.")
     a = ap.parse_args()
+    headers = {"Authorization": f"Bearer {a.token}"} if a.token else None
 
     examples = None
     if a.examples:
         with open(a.examples, encoding="utf-8") as f:
             examples = json.load(f)
 
-    report = asyncio.run(Handshake(a.url, examples, a.verbose).run())
+    report = asyncio.run(Handshake(a.url, examples, a.verbose, headers).run())
     print_report(report, colour=not a.no_colour and sys.stdout.isatty())
     if a.json_out:
         with open(a.json_out, "w", encoding="utf-8") as f:
