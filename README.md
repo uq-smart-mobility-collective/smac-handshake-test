@@ -41,6 +41,7 @@ Useful options:
 | `-v` | Shows every call as it happens. Useful if the test seems stuck. |
 | `--examples examples.json` | Gives one valid set of arguments per tool (see below). |
 | `--json report.json` | Saves the full report. Attach it if you post about a failure on Ed. |
+| `--token TOKEN` | Sends `Authorization: Bearer TOKEN` on every request, for an agent behind a bearer token (such as one on a course zone). You can set `MCP_TOKEN` instead, which keeps the token out of your shell history. |
 
 ## Submitting your result
 
