@@ -626,6 +626,9 @@ def explain_connect_error(e: BaseException, url: str, headers: dict[str, str] | 
     s = f"{type(e).__name__}: {e}"
     status = probe_status(url, headers)
     if status == 401:
+        if headers and "Authorization" in headers:
+            return (f"Got 401 Unauthorized from {url}. The bearer token was rejected; "
+                    "check the value passed with --token or set in MCP_TOKEN.")
         return (f"Got 401 Unauthorized from {url}. The agent needs a bearer token: pass --token "
                 "or set MCP_TOKEN (on a course zone it is in /opt/mcp-agent/TOKEN.txt).")
     if status == 404:
